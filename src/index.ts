@@ -3,15 +3,11 @@
 /**
  * Altimateguide agent MCP server (stdio transport).
  *
- * PUBLIC, agent-facing surface: one tool — `submit_tool` — which submits a
+ * A public MCP server exposing one tool — `submit_tool` — which submits a
  * listing to the Altimateguide directory for editorial review via
- * `POST /api/agent/submit`.
- *
- * This is deliberately separate from the internal ops MCP in `mcp-server/`
- * (impact.com ingestion + content management): that one is local-only and
- * reads/writes Postgres; this one has no database access and authenticates to
- * the public API with a per-account token. Keep the two apart — agents should
- * never see the ops tools.
+ * `POST /api/agent/submit`. It has no database access; it authenticates to the
+ * public API with a per-account bearer token, and nothing is published without
+ * an editor reviewing it.
  */
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";

@@ -1,29 +1,18 @@
 # Altimateguide Agent MCP Server
 
-A small, **public** MCP server that lets an AI agent submit a tool to the
-Altimateguide directory for editorial review. One tool: `submit_tool`.
+A small MCP server that lets an AI agent submit a tool to the
+[Altimateguide](https://altimateguide.com) directory for editorial review. It
+exposes exactly one tool: `submit_tool`.
 
-## How this differs from the internal MCP
-
-There are two MCP servers in this project, with different audiences — keep them
-separate:
-
-| | `agent-mcp/` (this) | `mcp-server/` |
-| --- | --- | --- |
-| Audience | AI agents / MCP clients (public) | Operators only (local, gitignored) |
-| Purpose | Submit a tool to the live directory | impact.com ingestion + content management |
-| Tools | `submit_tool` | `read_tool_data`, `create_tool_entry`, `pull_affiliate_offers`, … |
-| Data access | None — calls the public HTTP API | Full Postgres read/write |
-| Auth | Per-account API token | `DATABASE_URL` / impact.com credentials |
-
-An agent should only ever be given **this** server. The ops server (`mcp-server/`)
-is the operator's commerce/content tooling and must not be exposed to agents.
+**Scope:** this server only talks to the public Altimateguide HTTP API
+(`POST /api/agent/submit`). It holds no database credentials and grants no
+access to anything beyond submitting a listing — which is always queued for
+human review and never published automatically.
 
 ## The tool: `submit_tool`
 
-Submits a listing via `POST /api/agent/submit`. The submission is queued as
-`pending` and is **never published automatically** — an editor reviews it in
-`/manage/submissions`.
+Submits a listing for editorial review. The submission lands as `pending`; an
+editor reviews it.
 
 - **Parameters**
   - `name` (string, required) — tool name
@@ -48,7 +37,13 @@ Full request/response contract: <https://altimateguide.com/openapi.json>.
 - `ALTIMATEGUIDE_API_URL` — optional; overrides the API base (default
   `https://altimateguide.com`).
 
-## Running it
+## Install & use
+
+```bash
+npx -y altimateguide-agent-mcp        # run directly (stdio)
+```
+
+Or from a local checkout:
 
 ```bash
 npm install
@@ -62,8 +57,8 @@ npm run dev        # stdio server via tsx (for local testing)
 {
   "mcpServers": {
     "altimateguide": {
-      "command": "node",
-      "args": ["/absolute/path/to/altimateguide/agent-mcp/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "altimateguide-agent-mcp"],
       "env": {
         "ALTIMATEGUIDE_AGENT_TOKEN": "atg_..."
       }
@@ -72,20 +67,26 @@ npm run dev        # stdio server via tsx (for local testing)
 }
 ```
 
-## MCP registries
+(From a local checkout, use `"command": "node"` and
+`"args": ["/absolute/path/to/dist/index.js"]`.)
 
-This is a standard stdio MCP server and can be listed in the MCP directories
-(Smithery, Glama, mcp.so, PulseMCP, `awesome-mcp-servers`). A `smithery.yaml` is
-included for Smithery. Build first (`npm run build`); the stdio entry is
-`dist/index.js`.
+## Registries
+
+Listed via `server.json` (the MCP Registry manifest). It is a standard stdio
+server, so it also works with the community directories (Glama, PulseMCP,
+mcp.so, mcp.directory).
 
 ## Project structure
 
 ```
-agent-mcp/
+.
 ├── src/index.ts     # stdio MCP server + the submit_tool handler
+├── server.json      # MCP Registry manifest
 ├── package.json
 ├── tsconfig.json
-├── smithery.yaml
 └── README.md
 ```
+
+## License
+
+MIT — see [LICENSE](./LICENSE).
