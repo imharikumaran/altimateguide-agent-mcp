@@ -30,12 +30,6 @@
       }
     }
   },
-  "tools": [
-    {
-      "name": "submit_tool",
-      "description": "Submit a tool to the Altimateguide directory for editorial review."
-    }
-  ],
   "user_config": {
     "agent_token": {
       "type": "string",
