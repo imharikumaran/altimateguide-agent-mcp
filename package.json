@@ -2,6 +2,14 @@
   "name": "altimateguide-agent-mcp",
   "version": "1.0.0",
   "description": "Agent-facing MCP server: submit tools to the Altimateguide directory for editorial review",
+  "mcpName": "io.github.imharikumaran/altimateguide",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imharikumaran/altimateguide-agent-mcp.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "type": "module",
   "main": "dist/index.js",
   "bin": {

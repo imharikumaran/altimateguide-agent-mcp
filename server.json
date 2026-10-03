@@ -1,0 +1,35 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.imharikumaran/altimateguide",
+  "description": "Submit a tool to the Altimateguide directory for editorial review. Queued as pending; never published automatically.",
+  "repository": {
+    "url": "https://github.com/imharikumaran/altimateguide-agent-mcp",
+    "source": "github"
+  },
+  "version": "1.0.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "altimateguide-agent-mcp",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "ALTIMATEGUIDE_AGENT_TOKEN",
+          "description": "Account API token from https://altimateguide.com/account (Agent & API access).",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "ALTIMATEGUIDE_API_URL",
+          "description": "Override the API base (default https://altimateguide.com).",
+          "isRequired": false,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}
