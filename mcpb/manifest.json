@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "altimateguide-agent-mcp",
   "display_name": "Altimateguide",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Submit a software tool to the Altimateguide directory for editorial review.",
   "long_description": "Lets an AI agent submit a software tool (name, URL, description, categories, features, pros/cons, pricing) to the Altimateguide directory for editorial review. The listing is queued as pending — nothing is published automatically.\n\nTools: start_login / complete_login (email OTP → token), list_categories, check_duplicate, submit_tool, get_submission, upgrade_listing (sayabout / badge / paid). Supply an account API token (from https://altimateguide.com/account), or mint one at runtime with complete_login.",
   "author": {
@@ -17,14 +17,25 @@
   "documentation": "https://altimateguide.com/openapi.json",
   "support": "https://github.com/imharikumaran/altimateguide-agent-mcp/issues",
   "license": "MIT",
-  "keywords": ["mcp", "model-context-protocol", "ai", "agent", "directory", "altimateguide"],
-  "privacy_policies": ["https://altimateguide.com/privacy-policy"],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "agent",
+    "directory",
+    "altimateguide"
+  ],
+  "privacy_policies": [
+    "https://altimateguide.com/privacy-policy"
+  ],
   "server": {
     "type": "node",
     "entry_point": "server/index.js",
     "mcp_config": {
       "command": "node",
-      "args": ["${__dirname}/server/index.js"],
+      "args": [
+        "${__dirname}/server/index.js"
+      ],
       "env": {
         "ALTIMATEGUIDE_AGENT_TOKEN": "${user_config.agent_token}"
       }
@@ -40,7 +51,11 @@
     }
   },
   "compatibility": {
-    "platforms": ["darwin", "win32", "linux"],
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
     "runtimes": {
       "node": ">=18"
     }
