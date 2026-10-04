@@ -4,7 +4,7 @@
   "display_name": "Altimateguide",
   "version": "1.0.3",
   "description": "Submit a software tool to the Altimateguide directory for editorial review.",
-  "long_description": "Lets an AI agent submit a software tool (name, URL, description, categories, and structured features) to the Altimateguide directory for editorial review. The listing is queued as pending — nothing is published automatically.\n\nRequires an Altimateguide account API token, created at https://altimateguide.com/account (Agent & API access).",
+  "long_description": "Lets an AI agent submit a software tool (name, URL, description, categories, features, pros/cons, pricing) to the Altimateguide directory for editorial review. The listing is queued as pending — nothing is published automatically.\n\nTools: start_login / complete_login (email OTP → token), list_categories, check_duplicate, submit_tool, get_submission, upgrade_listing (sayabout / badge / paid). Supply an account API token (from https://altimateguide.com/account), or mint one at runtime with complete_login.",
   "author": {
     "name": "Altimateguide",
     "url": "https://altimateguide.com"
@@ -34,9 +34,9 @@
     "agent_token": {
       "type": "string",
       "title": "Altimateguide API token",
-      "description": "Create one at https://altimateguide.com/account (Agent & API access).",
+      "description": "Optional. Create one at https://altimateguide.com/account (Agent & API access), or mint one at runtime with the complete_login tool.",
       "sensitive": true,
-      "required": true
+      "required": false
     }
   },
   "compatibility": {

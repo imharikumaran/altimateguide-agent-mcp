@@ -3,41 +3,63 @@
 [![smithery badge](https://smithery.ai/badge/imharikumaran/altimateguide)](https://smithery.ai/servers/imharikumaran/altimateguide)
 
 A small MCP server that lets an AI agent submit a tool to the
-[Altimateguide](https://altimateguide.com) directory for editorial review. It
-exposes exactly one tool: `submit_tool`.
+[Altimateguide](https://altimateguide.com) directory for editorial review — and,
+optionally, earn it a dofollow link.
 
-**Scope:** this server only talks to the public Altimateguide HTTP API
-(`POST /api/agent/submit`). It holds no database credentials and grants no
-access to anything beyond submitting a listing — which is always queued for
-human review and never published automatically.
+**Scope:** this server only talks to the public Altimateguide HTTP API. It holds
+no database credentials and grants no access beyond submitting/owning listings.
+Nothing is published without an editor reviewing it, and no submission can
+self-grant a dofollow link — a paid listing only becomes a dofollow candidate
+once its payment is verified server-side.
 
-## The tool: `submit_tool`
+## Tools
 
-Submits a listing for editorial review. The submission lands as `pending`; an
-editor reviews it.
+| Tool | What it does |
+| --- | --- |
+| `start_login` | Email a one-time login code (`POST /api/auth/request-code`). |
+| `complete_login` | Exchange the code for an account API token and store it (`POST /api/agent/token`). |
+| `whoami` | Report whether a token is configured locally. |
+| `list_categories` | The valid category slugs (`GET /api/agent/categories`). |
+| `check_duplicate` | Preflight a name/URL against published tools + the pending queue (`GET /api/agent/check`). |
+| `submit_tool` | Submit a listing for editorial review (`POST /api/agent/submit`). |
+| `get_submission` | Poll a submission's status (`GET /api/agent/submissions/{id}`). |
+| `upgrade_listing` | Choose sayabout / badge / paid for a listing you own (`POST /api/agent/listing`). |
 
-- **Parameters**
-  - `name` (string, required) — tool name
-  - `url` (string, required) — canonical http(s) URL
-  - `categories` (array, required) — one or more category slugs
-  - `description` (string, optional) — neutral copy, min 20 chars
-  - `features` (array, optional) — `{ label, description? }` items
-  - `proof` (string, optional) — `none` (default) | `sayabout` | `badge` | `paid`
-  - `verificationUrl` (string) — required for `sayabout`/`badge`
-  - `paymentRef` (string) — required for `paid`
-  - `externalId` (string, optional) — your own id, for idempotent replays
-  - `source` (string, optional) — origin id (default `agent:mcp`)
-- **Returns** — the API response: `submission_id`, `status`, `proof`, `link_tier`.
+It also exposes the category list and the editorial policy as **resources**, a
+`submit_listing` **prompt**, and category-slug **completions**. Server
+`instructions` summarise the workflow for the model.
+
+### `submit_tool` parameters
+
+- `name` (string, required) — tool name
+- `url` (string, required) — canonical http(s) URL
+- `description` (string, optional) — neutral copy, min 20 chars
+- `categories` (array, optional) — slugs from `list_categories`
+- `categorySuggestions` (array, optional) — free-text hints when none fit (recorded for the reviewer)
+- `features` (array, optional) — `{ label, description? }` items
+- `pros` / `cons` (array, optional), `pricing` / `freePlan` / `freeTrial` (optional)
+- `proof` (string, optional) — `none` (default) | `sayabout` | `badge`
+- `verificationUrl` (string) — required for `sayabout`/`badge`
+- `externalId` (string, optional) — your id for idempotent replays (derived from the URL when omitted)
+- `source` (string, optional) — origin id (default `agent:mcp`)
+
+**Categories are optional.** An unknown or missing category never fails the
+submission — it is recorded for the reviewer, exactly like the site's feed
+pipeline. **Paid** (dofollow) listings are not submitted here; use
+`upgrade_listing` with `path: "paid"`, which returns a Dodo checkout URL whose
+payment is verified server-side.
 
 Full request/response contract: <https://altimateguide.com/openapi.json>.
 
 ## Configuration
 
-- `ALTIMATEGUIDE_AGENT_TOKEN` — **required.** A per-account API token. Create one
-  at <https://altimateguide.com/account> (Agent & API access); it is bound to that
-  account, shows as the submitter, and can be revoked.
+- `ALTIMATEGUIDE_AGENT_TOKEN` — optional. An account API token (create at
+  <https://altimateguide.com/account>, or mint one with the `complete_login`
+  tool). When set, it takes precedence over the stored token.
 - `ALTIMATEGUIDE_API_URL` — optional; overrides the API base (default
   `https://altimateguide.com`).
+- `ALTIMATEGUIDE_CONFIG_DIR` — optional; where `complete_login` stores the token
+  (default `~/.config/altimateguide`).
 
 ## Install & use
 
@@ -51,11 +73,6 @@ Or from a local checkout:
 npm install
 npm run build      # tsc -> dist/
 npm run dev        # stdio server via tsx (for local testing)
-
-npm run check      # tsc --noEmit
-npm test           # vitest suite
-npm run lint       # eslint
-npm run bundle     # build a .mcpb (Smithery / Claude Desktop)
 ```
 
 ### Claude Desktop / other MCP clients
@@ -65,17 +82,28 @@ npm run bundle     # build a .mcpb (Smithery / Claude Desktop)
   "mcpServers": {
     "altimateguide": {
       "command": "npx",
-      "args": ["-y", "altimateguide-agent-mcp"],
-      "env": {
-        "ALTIMATEGUIDE_AGENT_TOKEN": "atg_..."
-      }
+      "args": ["-y", "altimateguide-agent-mcp"]
     }
   }
 }
 ```
 
+The token can be supplied via `env.ALTIMATEGUIDE_AGENT_TOKEN`, or obtained at
+runtime by calling `start_login` + `complete_login` (the agent needs access to
+the mailbox it registers).
+
 (From a local checkout, use `"command": "node"` and
 `"args": ["/absolute/path/to/dist/index.js"]`.)
+
+## Development
+
+```bash
+npm run check   # tsc --noEmit
+npm run lint    # eslint
+npm test        # vitest
+npm run build   # tsc -> dist/
+npm run bundle  # build a .mcpb (Smithery / Claude Desktop)
+```
 
 ## Registries
 
@@ -88,20 +116,20 @@ mcp.so, mcp.directory).
 ```
 .
 ├── src/
-│   ├── index.ts         # stdio MCP server: transport + request handlers
-│   └── submit.ts         # submit_tool Zod schema, JSON Schema, and API call
-├── test/                 # vitest suites (submit logic + manifest version sync)
-├── scripts/
-│   └── build-mcpb.mjs    # packs the .mcpb bundle
-├── mcpb/
-│   └── manifest.json     # Claude Desktop / Smithery bundle manifest
-├── .github/workflows/
-│   └── publish.yml       # npm publish via OIDC trusted publishing
-├── server.json           # MCP Registry manifest
-├── eslint.config.js
+│   ├── index.ts        # stdio server: tool registry + resources/prompts/completions
+│   ├── api.ts          # shared fetch client (timeout, retry, error mapping)
+│   ├── auth.ts         # start_login / complete_login / whoami
+│   ├── categories.ts   # list_categories + matching
+│   ├── submit.ts       # submit_tool
+│   ├── listing.ts      # check_duplicate / get_submission / upgrade_listing
+│   ├── credentials.ts  # token storage (~/.config/altimateguide)
+│   ├── schema.ts       # zod -> JSON Schema helper
+│   └── version.ts      # package version
+├── test/               # vitest
+├── server.json         # MCP Registry manifest
+├── mcpb/manifest.json  # .mcpb bundle manifest
 ├── package.json
-├── tsconfig.json
-└── README.md
+└── tsconfig.json
 ```
 
 ## License

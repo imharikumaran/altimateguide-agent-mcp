@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.imharikumaran/altimateguide",
-  "description": "Submit a tool to the Altimateguide directory for editorial review.",
+  "description": "Submit a tool to the Altimateguide directory for editorial review, and optionally upgrade it to a dofollow listing.",
   "repository": {
     "url": "https://github.com/imharikumaran/altimateguide-agent-mcp",
     "source": "github"
@@ -18,8 +18,8 @@
       "environmentVariables": [
         {
           "name": "ALTIMATEGUIDE_AGENT_TOKEN",
-          "description": "Account API token from https://altimateguide.com/account (Agent & API access).",
-          "isRequired": true,
+          "description": "Optional account API token. Create one at https://altimateguide.com/account (Agent & API access), or mint one at runtime with the complete_login tool (email OTP).",
+          "isRequired": false,
           "isSecret": true,
           "format": "string"
         },
