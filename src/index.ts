@@ -15,9 +15,29 @@ import {
     CallToolRequestSchema,
     ErrorCode,
     ListToolsRequestSchema,
-    McpError,
 } from "@modelcontextprotocol/sdk/types.js";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
+
+// Report the version from the package manifest — one source of truth, read
+// relative to this file (works both from src/ under tsx and dist/ when installed).
+const { version } = JSON.parse(
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "package.json"), "utf8")
+) as { version: string };
+
+/**
+ * The MCP SDK puts an error's numeric `code` and bare `message` on the wire. But
+ * `McpError`'s message getter prefixes "MCP error <code>: ", and the client then
+ * prefixes it again — the doubled prefix. A plain Error carrying a numeric `code`
+ * keeps the JSON-RPC code while sending an unprefixed message.
+ */
+function toolError(code: number, message: string): Error {
+    const error = new Error(message) as Error & { code: number };
+    error.code = code;
+    return error;
+}
 
 const SubmitToolSchema = z.object({
     name: z.string().min(1, "Tool name is required"),
@@ -84,7 +104,7 @@ const SUBMIT_TOOL = {
                 type: "string",
                 enum: ["none", "sayabout", "badge", "paid"],
                 description:
-                    "Inclusion path (default none). sayabout/badge need verificationUrl; paid needs paymentRef.",
+                    "Inclusion path (default none). sayabout (recommended) and badge need verificationUrl; paid needs paymentRef.",
             },
             verificationUrl: {
                 type: "string",
@@ -108,7 +128,7 @@ function apiBase(): string {
 async function submitTool(args: z.infer<typeof SubmitToolSchema>) {
     const token = process.env.ALTIMATEGUIDE_AGENT_TOKEN;
     if (!token) {
-        throw new McpError(
+        throw toolError(
             ErrorCode.InvalidRequest,
             "ALTIMATEGUIDE_AGENT_TOKEN is not set. Create an account API token at " +
                 "https://altimateguide.com/account (Agent & API access)."
@@ -142,7 +162,7 @@ async function submitTool(args: z.infer<typeof SubmitToolSchema>) {
             body: JSON.stringify(payload),
         });
     } catch (error) {
-        throw new McpError(
+        throw toolError(
             ErrorCode.InternalError,
             `Could not reach the submission API at ${base}: ${
                 error instanceof Error ? error.message : String(error)
@@ -152,7 +172,7 @@ async function submitTool(args: z.infer<typeof SubmitToolSchema>) {
 
     const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     if (!res.ok) {
-        throw new McpError(
+        throw toolError(
             ErrorCode.InvalidRequest,
             `Submission failed (${res.status}): ${String(data.error || "unknown error")}`
         );
@@ -162,7 +182,7 @@ async function submitTool(args: z.infer<typeof SubmitToolSchema>) {
 }
 
 const server = new Server(
-    { name: "altimateguide-agent-mcp", version: "1.0.0" },
+    { name: "altimateguide-agent-mcp", version },
     { capabilities: { tools: {} } }
 );
 
@@ -172,12 +192,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
     try {
         if (name !== "submit_tool") {
-            throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
+            throw toolError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
         }
         return await submitTool(SubmitToolSchema.parse(args));
     } catch (error) {
         if (error instanceof z.ZodError) {
-            throw new McpError(ErrorCode.InvalidParams, `Invalid parameters: ${error.message}`);
+            throw toolError(ErrorCode.InvalidParams, `Invalid parameters: ${error.message}`);
         }
         throw error;
     }
