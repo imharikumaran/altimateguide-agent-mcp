@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "altimateguide-agent-mcp",
   "display_name": "Altimateguide",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "Submit a software tool to the Altimateguide directory for editorial review.",
   "long_description": "Lets an AI agent submit a software tool (name, URL, description, categories, and structured features) to the Altimateguide directory for editorial review. The listing is queued as pending — nothing is published automatically.\n\nRequires an Altimateguide account API token, created at https://altimateguide.com/account (Agent & API access).",
   "author": {

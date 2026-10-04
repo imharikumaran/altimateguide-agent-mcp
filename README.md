@@ -51,6 +51,11 @@ Or from a local checkout:
 npm install
 npm run build      # tsc -> dist/
 npm run dev        # stdio server via tsx (for local testing)
+
+npm run check      # tsc --noEmit
+npm test           # vitest suite
+npm run lint       # eslint
+npm run bundle     # build a .mcpb (Smithery / Claude Desktop)
 ```
 
 ### Claude Desktop / other MCP clients
@@ -82,8 +87,18 @@ mcp.so, mcp.directory).
 
 ```
 .
-├── src/index.ts     # stdio MCP server + the submit_tool handler
-├── server.json      # MCP Registry manifest
+├── src/
+│   ├── index.ts         # stdio MCP server: transport + request handlers
+│   └── submit.ts         # submit_tool Zod schema, JSON Schema, and API call
+├── test/                 # vitest suites (submit logic + manifest version sync)
+├── scripts/
+│   └── build-mcpb.mjs    # packs the .mcpb bundle
+├── mcpb/
+│   └── manifest.json     # Claude Desktop / Smithery bundle manifest
+├── .github/workflows/
+│   └── publish.yml       # npm publish via OIDC trusted publishing
+├── server.json           # MCP Registry manifest
+├── eslint.config.js
 ├── package.json
 ├── tsconfig.json
 └── README.md

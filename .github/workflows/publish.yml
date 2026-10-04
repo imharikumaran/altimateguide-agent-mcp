@@ -48,6 +48,8 @@ jobs:
 
       - run: npm ci
       - run: npm run build
+      - run: npm run lint
+      - run: npm test
 
       # If triggered by a v* tag, the tag must match package.json.
       - name: Verify tag matches package version
