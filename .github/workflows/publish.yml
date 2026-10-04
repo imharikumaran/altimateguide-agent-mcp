@@ -11,6 +11,10 @@
 #       Repository:           altimateguide-agent-mcp
 #       Workflow filename:    publish.yml
 #       Environment:          (leave blank)
+#       Allowed actions:      enable "npm publish" (direct publishing).
+#                             Connections created after 2026-09-03 default to
+#                             stage-only and will reject plain `npm publish`
+#                             with "OIDC permission denied for this action".
 #
 # This file must live at .github/workflows/publish.yml in the
 # imharikumaran/altimateguide-agent-mcp repository (the repo named in
@@ -23,6 +27,8 @@ name: publish
 on:
   release:
     types: [published]
+  push:
+    tags: ["v*"]
   workflow_dispatch:
 
 permissions:
