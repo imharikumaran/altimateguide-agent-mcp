@@ -32,10 +32,10 @@ execFileSync("npm", ["run", "build"], { cwd: root, stdio: "inherit", env: childE
 rmSync(stage, { recursive: true, force: true });
 mkdirSync(join(stage, "server"), { recursive: true });
 cpSync(join(root, "dist", "index.js"), join(stage, "server", "index.js"));
-writeFileSync(
-  join(stage, "manifest.json"),
-  JSON.stringify({ ...manifest, version: pkg.version }, null, 2) + "\n"
-);
+// The checked-in manifest is the source (kept in sync with package.json by
+// scripts/sync-version.mjs on `npm version`), so bundle it verbatim rather than
+// patching the version here — that masking is what let it drift before.
+writeFileSync(join(stage, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
 writeFileSync(
   join(stage, "package.json"),
   JSON.stringify(
