@@ -46,24 +46,6 @@ jobs:
           node-version: 24 # ships npm >= 11.5.1, which knows about OIDC
           registry-url: https://registry.npmjs.org
 
-      # TEMP diagnostic: print the OIDC claims npm validates against the
-      # trusted-publisher config (remove once publishing works).
-      - name: Diagnose OIDC claims
-        run: |
-          node --input-type=module -e '
-            const r = await fetch(process.env.ACTIONS_ID_TOKEN_REQUEST_URL + "&audience=npm:registry.npmjs.org", {
-              headers: { Authorization: "bearer " + process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN }
-            });
-            const { value: jwt } = await r.json();
-            const p = JSON.parse(Buffer.from(jwt.split(".")[1], "base64url").toString());
-            console.log(JSON.stringify({
-              repository: p.repository, repository_owner: p.repository_owner,
-              event_name: p.event_name, ref: p.ref,
-              workflow_ref: p.workflow_ref, job_workflow_ref: p.job_workflow_ref,
-              environment: p.environment, aud: p.aud
-            }, null, 2));
-          '
-
       - run: npm ci
       - run: npm run build
 
