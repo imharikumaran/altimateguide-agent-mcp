@@ -42,6 +42,9 @@ It also exposes the category list and the editorial policy as **resources**, a
 - `verificationUrl` (string) — required for `sayabout`/`badge`
 - `externalId` (string, optional) — your id for idempotent replays (derived from the URL when omitted)
 - `source` (string, optional) — origin id (default `agent:mcp`)
+- `resubmit` (boolean, optional) — set `true` to send a fresh copy after a previous
+  submission for this URL was rejected (mints a new idempotency key instead of
+  replaying the rejected row)
 
 **Categories are optional.** An unknown or missing category never fails the
 submission — it is recorded for the reviewer, exactly like the site's feed

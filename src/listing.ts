@@ -83,6 +83,27 @@ export const UpgradeListingSchema = z.object({
     .url()
     .optional()
     .describe("Required for sayabout (Wall of Love URL) / badge"),
+}).superRefine((value, ctx) => {
+  const targets = [value.submissionId, value.slug].filter(
+    (v) => v !== undefined && v !== ""
+  );
+  if (targets.length !== 1) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["submissionId"],
+      message: "Provide exactly one of submissionId or slug",
+    });
+  }
+  if (
+    (value.path === "sayabout" || value.path === "badge") &&
+    !value.verificationUrl
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["verificationUrl"],
+      message: "verificationUrl is required for sayabout or badge",
+    });
+  }
 });
 
 export const UPGRADE_LISTING_TOOL: Tool = {

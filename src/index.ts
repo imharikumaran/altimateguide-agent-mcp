@@ -61,6 +61,7 @@ const INSTRUCTIONS = [
   "Before submitting, check_duplicate(name, url) to avoid a 409.",
   "Paid/dofollow: submit_tool does standard (nofollow) listings; use upgrade_listing with path 'sayabout' | 'badge' | 'paid' on a listing you own. 'paid' returns a Dodo checkout URL; the link only becomes dofollow once the payment is verified server-side.",
   "After submitting, poll get_submission(id).",
+  "If a submission comes back rejected, call submit_tool with resubmit: true to send a revised listing for a fresh review — a plain retry replays the rejected one.",
 ].join("\n");
 
 const TOOLS: Tool[] = [
@@ -88,7 +89,7 @@ async function callTool(name: string, args: unknown) {
       return textResult(JSON.stringify(result, null, 2));
     }
     case "whoami":
-      return textResult(JSON.stringify(whoami(), null, 2));
+      return textResult(JSON.stringify(await whoami(), null, 2));
     case "list_categories": {
       const categories = await fetchCategories();
       return textResult(JSON.stringify({ categories }, null, 2));
@@ -169,6 +170,7 @@ server.setRequestHandler(ListPromptsRequestSchema, async () => ({
       arguments: [
         { name: "name", description: "Tool name", required: false },
         { name: "url", description: "Canonical tool URL", required: false },
+        { name: "categories", description: "Category slugs", required: false },
       ],
     },
   ],
@@ -181,9 +183,13 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
   const args = request.params.arguments ?? {};
   const name = typeof args.name === "string" ? args.name : "<tool name>";
   const url = typeof args.url === "string" ? args.url : "<tool url>";
+  const categories =
+    typeof args.categories === "string" ? args.categories.trim() : "";
   const prompt = [
     `Submit "${name}" (${url}) to Altimateguide.`,
-    "1. Call list_categories and pick the closest real category slugs.",
+    categories
+      ? `1. Use these category slugs: ${categories}.`
+      : "1. Call list_categories and pick the closest real category slugs.",
     "2. Write a neutral 20+ character description (no ranking language).",
     "3. Call check_duplicate, then submit_tool with categories, description, and features.",
     "If no category fits, pass your best guess in categorySuggestions instead of inventing a slug.",
@@ -194,11 +200,21 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
   };
 });
 
-// Category-slug completion for prompt/resource arguments.
+// Category-slug completion for the submit_listing prompt's `categories`
+// argument. We only have category slugs to offer, so any other argument (or a
+// different prompt/resource) gets no values rather than the wrong list.
 server.setRequestHandler(CompleteRequestSchema, async (request) => {
+  const { ref, argument } = request.params;
+  if (
+    ref.type !== "ref/prompt" ||
+    ref.name !== "submit_listing" ||
+    argument.name !== "categories"
+  ) {
+    return { completion: { values: [] } };
+  }
   try {
     const categories = await fetchCategories();
-    const query = (request.params.argument?.value ?? "").toLowerCase();
+    const query = argument.value.toLowerCase();
     const values = categories
       .map((c) => c.slug)
       .filter((slug) => slug.includes(query))

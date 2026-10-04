@@ -70,12 +70,41 @@ export async function completeLogin(
 
 export const WHOAMI_TOOL: Tool = {
   name: "whoami",
-  description: "Report whether an API token is configured locally and where the API points.",
+  description:
+    "Confirm the configured token is live and report the account it belongs to " +
+    "(GET /api/agent/whoami). Distinguishes a missing token from a revoked/expired one.",
   inputSchema: { type: "object", properties: {} },
-  annotations: { title: "Account status", readOnlyHint: true, openWorldHint: false },
+  annotations: { title: "Account status", readOnlyHint: true, openWorldHint: true },
 };
 
-export function whoami(): { authenticated: boolean; tokenPreview?: string; apiBase: string } {
-  const preview = tokenPreview();
-  return { authenticated: Boolean(preview), tokenPreview: preview, apiBase: apiBase() };
+export interface WhoamiResult {
+  authenticated: boolean;
+  account?: { id: number; email: string };
+  tokenPreview?: string;
+  apiBase: string;
+  error?: string;
+}
+
+/**
+ * Verify the token against the API rather than trusting local presence: a
+ * revoked or expired `atg_` token must report unauthenticated, not a false
+ * "authenticated: true". A missing token is reported (not thrown) so the tool
+ * stays a pure status check.
+ */
+export async function whoami(): Promise<WhoamiResult> {
+  const result: WhoamiResult = {
+    authenticated: false,
+    tokenPreview: tokenPreview(),
+    apiBase: apiBase(),
+  };
+  try {
+    const data = await apiRequest<{ account?: { id: number; email: string } }>(
+      "/api/agent/whoami"
+    );
+    result.authenticated = true;
+    result.account = data.account;
+  } catch (error) {
+    result.error = error instanceof Error ? error.message : String(error);
+  }
+  return result;
 }

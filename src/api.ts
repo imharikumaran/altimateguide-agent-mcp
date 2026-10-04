@@ -28,6 +28,13 @@ export interface RequestOptions {
   auth?: boolean;
   /** Extra retries on transient failures (429/5xx/network). Default 2. */
   retries?: number;
+  /**
+   * Whether a transient failure may be retried. Defaults to true only for safe
+   * methods (GET/HEAD): a retried POST can duplicate a non-idempotent write
+   * (e.g. a second upgrade row / checkout session), so callers that are safe to
+   * replay (submit_tool, which carries an external_id) must opt in explicitly.
+   */
+  idempotent?: boolean;
   timeoutMs?: number;
 }
 
@@ -46,6 +53,7 @@ export async function apiRequest<T = Record<string, unknown>>(
   opts: RequestOptions = {}
 ): Promise<T> {
   const { method = "GET", body, auth = true, retries = 2, timeoutMs = 15000 } = opts;
+  const idempotent = opts.idempotent ?? (method === "GET" || method === "HEAD");
 
   const headers: Record<string, string> = { Accept: "application/json" };
   if (body !== undefined) headers["Content-Type"] = "application/json";
@@ -73,7 +81,7 @@ export async function apiRequest<T = Record<string, unknown>>(
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      if (attempt < retries) {
+      if (idempotent && attempt < retries) {
         attempt += 1;
         await sleep(500 * attempt);
         continue;
@@ -84,10 +92,20 @@ export async function apiRequest<T = Record<string, unknown>>(
       );
     }
 
-    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    // Read as text first so a non-JSON error body (an HTML/proxy 500, say) keeps
+    // its detail instead of collapsing to a bare "HTTP 500".
+    const rawBody = await res.text().catch(() => "");
+    let data: Record<string, unknown> = {};
+    if (rawBody) {
+      try {
+        data = JSON.parse(rawBody) as Record<string, unknown>;
+      } catch {
+        data = {};
+      }
+    }
     if (res.ok) return data as T;
 
-    if (RETRYABLE_STATUS.has(res.status) && attempt < retries) {
+    if (idempotent && RETRYABLE_STATUS.has(res.status) && attempt < retries) {
       const retryAfter = Number(res.headers.get("retry-after"));
       const waitMs =
         Number.isFinite(retryAfter) && retryAfter > 0
@@ -98,12 +116,18 @@ export async function apiRequest<T = Record<string, unknown>>(
       continue;
     }
 
-    throw mapStatusToError(res.status, data);
+    throw mapStatusToError(res.status, data, rawBody);
   }
 }
 
-function mapStatusToError(status: number, data: Record<string, unknown>): Error & { code: number } {
-  const detail = String(data.error || data.message || `HTTP ${status}`);
+function mapStatusToError(
+  status: number,
+  data: Record<string, unknown>,
+  rawBody = ""
+): Error & { code: number } {
+  const detail = String(
+    data.error || data.message || rawBody.trim().slice(0, 300) || `HTTP ${status}`
+  );
   switch (status) {
     case 400:
     case 404:

@@ -167,6 +167,58 @@ describe("submitTool", () => {
   });
 });
 
+describe("submitTool resubmit", () => {
+  it("mints a fresh external id when resubmit is true", async () => {
+    process.env.ALTIMATEGUIDE_AGENT_TOKEN = "atg_test";
+    const fetchMock = vi.fn<typeof fetch>();
+    fetchMock.mockResolvedValueOnce(jsonResponse({ status: "pending" }, 202));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await submitTool(SubmitToolSchema.parse({ ...baseArgs, resubmit: true }));
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(String(body.external_id)).toMatch(/^url-[0-9a-f]{32}$/);
+    expect(body).not.toHaveProperty("resubmit");
+  });
+
+  it("uses a different external id than a plain submit for the same URL", async () => {
+    process.env.ALTIMATEGUIDE_AGENT_TOKEN = "atg_test";
+    const fetchMock = vi.fn<typeof fetch>();
+    fetchMock.mockResolvedValue(jsonResponse({ status: "pending" }, 202));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await submitTool(SubmitToolSchema.parse(baseArgs));
+    await submitTool(SubmitToolSchema.parse({ ...baseArgs, resubmit: true }));
+
+    const first = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    const second = JSON.parse(String(fetchMock.mock.calls[1][1]?.body));
+    expect(second.external_id).not.toBe(first.external_id);
+  });
+
+  it("flags a rejected replay with a resubmit hint", async () => {
+    process.env.ALTIMATEGUIDE_AGENT_TOKEN = "atg_test";
+    const fetchMock = vi.fn<typeof fetch>();
+    fetchMock.mockResolvedValueOnce(jsonResponse({ submission_id: 5, status: "rejected" }, 200));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await submitTool(SubmitToolSchema.parse(baseArgs));
+
+    expect(result.structuredContent.status).toBe("rejected");
+    expect(String(result.structuredContent.resubmit_hint)).toMatch(/resubmit: true/);
+  });
+
+  it("does not add a resubmit hint for a fresh pending submission", async () => {
+    process.env.ALTIMATEGUIDE_AGENT_TOKEN = "atg_test";
+    const fetchMock = vi.fn<typeof fetch>();
+    fetchMock.mockResolvedValueOnce(jsonResponse({ submission_id: 6, status: "pending" }, 202));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await submitTool(SubmitToolSchema.parse(baseArgs));
+
+    expect(result.structuredContent).not.toHaveProperty("resubmit_hint");
+  });
+});
+
 describe("SubmitToolSchema", () => {
   it("allows an empty or missing category list", () => {
     expect(SubmitToolSchema.safeParse({ ...baseArgs, categories: [] }).success).toBe(true);
@@ -207,5 +259,26 @@ describe("SUBMIT_TOOL input schema", () => {
     expect(schema.properties?.description?.minLength).toBe(20);
     expect(schema.properties?.proof?.enum).toEqual(["none", "sayabout", "badge"]);
     expect(schema).not.toHaveProperty("$schema");
+  });
+});
+
+describe("SubmitToolSchema strictness", () => {
+  it("rejects unknown arguments instead of silently dropping them", () => {
+    expect(SubmitToolSchema.safeParse({ ...baseArgs, bogusArgument: true }).success).toBe(
+      false
+    );
+  });
+
+  it("requires verificationUrl for sayabout/badge proof", () => {
+    expect(SubmitToolSchema.safeParse({ ...baseArgs, proof: "sayabout" }).success).toBe(
+      false
+    );
+    expect(
+      SubmitToolSchema.safeParse({
+        ...baseArgs,
+        proof: "sayabout",
+        verificationUrl: "https://example.com/wall-of-love",
+      }).success
+    ).toBe(true);
   });
 });
