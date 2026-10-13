@@ -108,3 +108,58 @@ export async function whoami(): Promise<WhoamiResult> {
   }
   return result;
 }
+
+/* --------------------------- AgentID login ---------------------------- */
+
+export const START_AGENTID_LOGIN_TOOL: Tool = {
+  name: "start_agentid_login",
+  description:
+    "Begin an AgentID sign-in (POST /api/agent/agentid/start) so an agent can register " +
+    "without an email inbox. Returns an authorizeUrl and a flowId — open the URL to " +
+    "complete the sign-in, then call complete_agentid_login with the flowId.",
+  inputSchema: { type: "object", properties: {} },
+  annotations: { title: "Start AgentID login", readOnlyHint: false, openWorldHint: true },
+};
+
+export interface StartAgentIdLoginResult {
+  flowId: string;
+  authorizeUrl: string;
+  expiresAt: string;
+}
+
+export async function startAgentIdLogin(): Promise<StartAgentIdLoginResult> {
+  return apiRequest<StartAgentIdLoginResult>("/api/agent/agentid/start", {
+    method: "POST",
+    body: {},
+    auth: false,
+  });
+}
+
+export const CompleteAgentIdLoginSchema = z.object({
+  flowId: z.string().min(1).describe("The flowId returned by start_agentid_login"),
+});
+
+export const COMPLETE_AGENTID_LOGIN_TOOL: Tool = {
+  name: "complete_agentid_login",
+  description:
+    "Poll an AgentID sign-in (GET /api/agent/agentid/poll) and, once the browser leg is " +
+    "done, store the resulting account API token locally. Returns status 'pending' until " +
+    "the sign-in completes.",
+  inputSchema: inputSchemaFor(CompleteAgentIdLoginSchema),
+  annotations: { title: "Complete AgentID login", readOnlyHint: false, openWorldHint: true },
+};
+
+export async function completeAgentIdLogin(
+  flowId: string
+): Promise<Record<string, unknown>> {
+  const data = await apiRequest<Record<string, unknown>>(
+    `/api/agent/agentid/poll?flow=${encodeURIComponent(flowId)}`,
+    { auth: false }
+  );
+  if (typeof data.token === "string") {
+    saveToken(data.token);
+    data.tokenPreview = tokenPreview() ?? "";
+    delete data.token;
+  }
+  return data;
+}

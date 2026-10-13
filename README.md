@@ -18,11 +18,15 @@ once its payment is verified server-side.
 | --- | --- |
 | `start_login` | Email a one-time login code (`POST /api/auth/request-code`). |
 | `complete_login` | Exchange the code for an account API token and store it (`POST /api/agent/token`). |
+| `start_agentid_login` | Begin an AgentID sign-in with no email inbox — returns an `authorizeUrl` + `flowId` (`POST /api/agent/agentid/start`). |
+| `complete_agentid_login` | Poll the AgentID sign-in and store the account token once it completes (`GET /api/agent/agentid/poll`). |
 | `whoami` | Report whether a token is configured locally. |
 | `list_categories` | The valid category slugs (`GET /api/agent/categories`). |
 | `check_duplicate` | Preflight a name/URL against published tools + the pending queue (`GET /api/agent/check`). |
 | `submit_tool` | Submit a listing for editorial review (`POST /api/agent/submit`). |
 | `get_submission` | Poll a submission's status (`GET /api/agent/submissions/{id}`). |
+| `update_listing` | Edit the facts of a listing you own — only the fields you pass change (`PATCH /api/agent/listing/{slug}`). |
+| `get_listing_stats` | Visits/upvotes/saves/reviews for your listings, with 7- and 30-day windows (`GET /api/agent/stats`). |
 | `upgrade_listing` | Choose sayabout / badge / paid for a listing you own (`POST /api/agent/listing`). |
 
 It also exposes the category list and the editorial policy as **resources**, a

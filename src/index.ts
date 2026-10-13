@@ -36,9 +36,16 @@ import {
   startLogin,
   completeLogin,
   whoami,
+  START_AGENTID_LOGIN_TOOL,
+  COMPLETE_AGENTID_LOGIN_TOOL,
+  CompleteAgentIdLoginSchema,
+  startAgentIdLogin,
+  completeAgentIdLogin,
 } from "./auth.js";
 import { LIST_CATEGORIES_TOOL, fetchCategories } from "./categories.js";
 import { SUBMIT_TOOL, SubmitToolSchema, submitTool } from "./submit.js";
+import { UPDATE_LISTING_TOOL, UpdateListingSchema, updateListing } from "./update.js";
+import { GET_LISTING_STATS_TOOL, GetListingStatsSchema, getListingStats } from "./stats.js";
 import {
   CHECK_DUPLICATE_TOOL,
   CheckDuplicateSchema,
@@ -62,17 +69,23 @@ const INSTRUCTIONS = [
   "Paid/dofollow: submit_tool does standard (nofollow) listings; use upgrade_listing with path 'sayabout' | 'badge' | 'paid' on a listing you own. 'paid' returns a Dodo checkout URL; the link only becomes dofollow once the payment is verified server-side.",
   "After submitting, poll get_submission(id).",
   "If a submission comes back rejected, call submit_tool with resubmit: true to send a revised listing for a fresh review — a plain retry replays the rejected one.",
+  "Manage what you own: update_listing(slug, …) edits a listing you own (only the fields you pass change); get_listing_stats(slug?) returns its visits/upvotes/saves/reviews.",
+  "No email inbox? start_agentid_login() returns an authorizeUrl + flowId; open the URL to complete the sign-in, then complete_agentid_login(flowId) stores the account token.",
 ].join("\n");
 
 const TOOLS: Tool[] = [
   START_LOGIN_TOOL,
   COMPLETE_LOGIN_TOOL,
+  START_AGENTID_LOGIN_TOOL,
+  COMPLETE_AGENTID_LOGIN_TOOL,
   WHOAMI_TOOL,
   LIST_CATEGORIES_TOOL,
   CHECK_DUPLICATE_TOOL,
   SUBMIT_TOOL,
   GET_SUBMISSION_TOOL,
+  UPDATE_LISTING_TOOL,
   UPGRADE_LISTING_TOOL,
+  GET_LISTING_STATS_TOOL,
 ];
 
 function textResult(text: string) {
@@ -102,6 +115,16 @@ async function callTool(name: string, args: unknown) {
       return getSubmission(GetSubmissionSchema.parse(args));
     case "upgrade_listing":
       return upgradeListing(UpgradeListingSchema.parse(args));
+    case "update_listing":
+      return updateListing(UpdateListingSchema.parse(args));
+    case "get_listing_stats":
+      return getListingStats(GetListingStatsSchema.parse(args).slug);
+    case "start_agentid_login":
+      return textResult(JSON.stringify(await startAgentIdLogin(), null, 2));
+    case "complete_agentid_login": {
+      const a = CompleteAgentIdLoginSchema.parse(args);
+      return textResult(JSON.stringify(await completeAgentIdLogin(a.flowId), null, 2));
+    }
     default:
       throw toolError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
   }
