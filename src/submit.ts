@@ -61,7 +61,10 @@ export const SubmitToolSchema = z.object({
     .enum(["none", "sayabout", "badge"])
     .optional()
     .describe(
-      "Inclusion path (default none). sayabout (Wall of Love URL, recommended) and badge need verificationUrl. For a paid (dofollow) listing use upgrade_listing."
+      "Inclusion path (default none; nofollow, reviewed in 15-20 business days). " +
+        "sayabout (Wall of Love URL, free, reviewed within 2 business days, dofollow) and " +
+        "badge (free, reviewed in 5-7 business days, dofollow) need verificationUrl. " +
+        "For a paid (dofollow, reviewed within 2 business days) listing use upgrade_listing."
     ),
   verificationUrl: z.string().url().optional().describe("Required for sayabout/badge proof"),
   externalId: z
@@ -106,7 +109,9 @@ export const SUBMIT_TOOL: Tool = {
   description:
     "Submit a tool to the Altimateguide directory for editorial review " +
     "(POST /api/agent/submit). The listing is queued as pending and is never " +
-    "published automatically — an editor reviews it. Categories are optional; " +
+    "published automatically — an editor reviews it. Turnaround depends on proof: " +
+    "sayabout/paid within 2 business days (dofollow), badge in 5-7 business days " +
+    "(dofollow), none in 15-20 business days (nofollow). Categories are optional; " +
     "unknown/empty categories are recorded for the reviewer. Requires a token " +
     "(run complete_login, or set ALTIMATEGUIDE_AGENT_TOKEN).",
   inputSchema: inputSchemaFor(SubmitToolSchema),

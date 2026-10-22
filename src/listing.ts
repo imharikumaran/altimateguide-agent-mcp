@@ -49,8 +49,9 @@ export const GetSubmissionSchema = z.object({
 export const GET_SUBMISSION_TOOL: Tool = {
   name: "get_submission",
   description:
-    "Poll a submission's status (pending/approved/rejected), link tier, and whether a " +
-    "paid checkout has been verified (GET /api/agent/submissions/{id}).",
+    "Poll a submission's status (pending/approved/rejected), link tier, pending " +
+    "review_eta, and whether a paid checkout has been verified " +
+    "(GET /api/agent/submissions/{id}).",
   inputSchema: inputSchemaFor(GetSubmissionSchema),
   annotations: { title: "Get submission status", readOnlyHint: true, openWorldHint: true },
 };
@@ -67,7 +68,10 @@ export async function getSubmission(args: z.infer<typeof GetSubmissionSchema>) {
 export const UpgradeListingSchema = z.object({
   path: z
     .enum(["sayabout", "badge", "paid"])
-    .describe("Inclusion path. paid returns a Dodo checkout URL."),
+    .describe(
+      "Inclusion path. sayabout and paid are reviewed within 2 business days; " +
+        "badge in 5-7. paid returns a Dodo checkout URL."
+    ),
   submissionId: z
     .number()
     .int()
@@ -112,7 +116,8 @@ export const UPGRADE_LISTING_TOOL: Tool = {
     "Choose how a listing you own earns a dofollow link (POST /api/agent/listing): " +
     "sayabout, badge, or paid. `paid` returns a Dodo checkout URL whose metadata carries " +
     "the submission id; the payment is verified server-side by the Dodo webhook. Nothing " +
-    "publishes or self-grants dofollow here.",
+    "publishes or self-grants dofollow here. Review times: sayabout and paid within " +
+    "2 business days, badge in 5-7 business days.",
   inputSchema: inputSchemaFor(UpgradeListingSchema),
   annotations: {
     title: "Upgrade a listing",

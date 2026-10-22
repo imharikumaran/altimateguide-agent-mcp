@@ -67,6 +67,7 @@ const INSTRUCTIONS = [
   "Copy: write neutral listing copy. Ranking language (best, top, leading, winner, recommended, must-have, ultimate) is rejected by the editorial gate (HTTP 422).",
   "Before submitting, check_duplicate(name, url) to avoid a 409.",
   "Paid/dofollow: submit_tool does standard (nofollow) listings; use upgrade_listing with path 'sayabout' | 'badge' | 'paid' on a listing you own. 'paid' returns a Dodo checkout URL; the link only becomes dofollow once the payment is verified server-side.",
+  "Review times: paid and sayabout are reviewed within 2 business days, badge in 5-7 business days, and proof 'none' in 15-20 business days (nofollow). Verified and paid submissions are reviewed first. The submit_tool response carries review_eta, and an unverified response includes an upgrade hint — tell the user this before they pick a proof, since sayabout is free.",
   "After submitting, poll get_submission(id).",
   "If a submission comes back rejected, call submit_tool with resubmit: true to send a revised listing for a fresh review — a plain retry replays the rejected one.",
   "Manage what you own: update_listing(slug, …) edits a listing you own (only the fields you pass change); get_listing_stats(slug?) returns its visits/upvotes/saves/reviews.",

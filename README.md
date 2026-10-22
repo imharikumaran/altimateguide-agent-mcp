@@ -10,7 +10,9 @@ optionally, earn it a dofollow link.
 no database credentials and grants no access beyond submitting/owning listings.
 Nothing is published without an editor reviewing it, and no submission can
 self-grant a dofollow link — a paid listing only becomes a dofollow candidate
-once its payment is verified server-side.
+once its payment is verified server-side. Unverified listings stay nofollow and
+are reviewed in 15–20 business days; verified and paid listings are reviewed in
+2–7.
 
 ## Tools
 
@@ -57,6 +59,22 @@ pipeline. **Paid** (dofollow) listings are not submitted here; use
 payment is verified server-side.
 
 Full request/response contract: <https://altimateguide.com/openapi.json>.
+
+## Review times
+
+Turnaround and link tier both come from `proof`:
+
+| `proof` | Link | Review |
+| --- | --- | --- |
+| `paid` (via `upgrade_listing`) | dofollow | within 2 business days |
+| `sayabout` | dofollow | within 2 business days |
+| `badge` | dofollow | 5–7 business days |
+| `none` (default) | nofollow | 15–20 business days |
+
+Verified and paid submissions are reviewed ahead of unverified ones. The
+`submit_tool` response includes `review_eta`; an unverified response also
+includes an `upgrade` hint pointing at `upgrade_listing`, so an agent can
+surface the faster dofollow paths to its user.
 
 ## Configuration
 
@@ -138,6 +156,32 @@ mcp.so, mcp.directory).
 ├── package.json
 └── tsconfig.json
 ```
+
+## Security & permissions
+
+This server is a thin, local client for the public Altimateguide HTTP API — no
+database access, no subprocess, no background work. The capabilities below are
+the entire surface (the same surface a supply-chain scanner reports):
+
+- **Network** — outbound HTTPS only, to the base in `ALTIMATEGUIDE_API_URL`
+  (default `https://altimateguide.com`). The endpoints it calls are exactly the
+  ones in [Tools](#tools) (`/api/auth/…`, `/api/agent/…`, `/openapi.json`). No
+  telemetry and no third-party calls.
+- **Environment variables** — reads `ALTIMATEGUIDE_AGENT_TOKEN`,
+  `ALTIMATEGUIDE_API_URL`, and `ALTIMATEGUIDE_CONFIG_DIR`. Nothing is written
+  back.
+- **Filesystem** — one file: the account token at
+  `${ALTIMATEGUIDE_CONFIG_DIR:-~/.config/altimateguide}/credentials.json`,
+  created with mode `0600`. No other paths are touched.
+- **No subprocess, no database** — it never spawns a process and holds no
+  database credentials.
+
+Credentials: an `ALTIMATEGUIDE_AGENT_TOKEN` environment variable always takes
+precedence over the stored file, so CI-style setups can inject a token without
+writing to disk.
+
+Nothing is published without editorial review, and a paid listing only becomes a
+dofollow candidate once its payment is verified server-side.
 
 ## License
 
