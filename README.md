@@ -10,9 +10,9 @@ optionally, earn it a dofollow link.
 no database credentials and grants no access beyond submitting/owning listings.
 Nothing is published without an editor reviewing it, and no submission can
 self-grant a dofollow link — a paid listing only becomes a dofollow candidate
-once its payment is verified server-side. Unverified listings stay nofollow and
-are reviewed in 15–20 business days; verified and paid listings are reviewed in
-2–7.
+once its payment is verified server-side. Free no-verification listings stay
+nofollow and are reviewed within 30 days; verified and paid listings are
+reviewed in 2–7 business days.
 
 ## Tools
 
@@ -44,7 +44,7 @@ It also exposes the category list and the editorial policy as **resources**, a
 - `categorySuggestions` (array, optional) — free-text hints when none fit (recorded for the reviewer)
 - `features` (array, optional) — `{ label, description? }` items
 - `pros` / `cons` (array, optional), `pricing` / `freePlan` / `freeTrial` (optional)
-- `proof` (string, optional) — `none` (default) | `sayabout` | `badge`
+- `proof` (string, optional) — `none` (default; free, no verification, nofollow) | `sayabout` | `badge`
 - `verificationUrl` (string) — required for `sayabout`/`badge`
 - `externalId` (string, optional) — your id for idempotent replays (derived from the URL when omitted)
 - `source` (string, optional) — origin id (default `agent:mcp`)
@@ -69,12 +69,15 @@ Turnaround and link tier both come from `proof`:
 | `paid` (via `upgrade_listing`) | dofollow | within 2 business days |
 | `sayabout` | dofollow | within 2 business days |
 | `badge` | dofollow | 5–7 business days |
-| `none` (default) | nofollow | 15–20 business days |
+| `none` (default) | nofollow | within 30 days |
 
-Verified and paid submissions are reviewed ahead of unverified ones. The
-`submit_tool` response includes `review_eta`; an unverified response also
-includes an `upgrade` hint pointing at `upgrade_listing`, so an agent can
-surface the faster dofollow paths to its user.
+`none` is the free no-verification lane — the same one a human can request at
+<https://altimateguide.com/free-listing>. Verified and paid submissions are
+reviewed ahead of free no-verification ones. The `submit_tool` response includes
+`review_eta` (`unit` is `calendar_days` for `none`, `business_days` otherwise);
+a `none` response also includes an `upgrade` hint pointing at
+`upgrade_listing`, so an agent can surface the faster dofollow paths to its
+user.
 
 ## Configuration
 
