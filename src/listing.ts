@@ -65,12 +65,18 @@ export async function getSubmission(args: z.infer<typeof GetSubmissionSchema>) {
 
 /* ------------------------------ upgrade_listing ------------------------------ */
 
+/** Keep in sync with altimateguide.com/src/data/paid-listing.ts. */
+const PAID_PRICE = "$14.99 one-time";
+
 export const UpgradeListingSchema = z.object({
   path: z
-    .enum(["sayabout", "badge", "paid"])
+    .enum(["paid", "sayabout", "badge"])
     .describe(
-      "Inclusion path. sayabout and paid are reviewed within 2 business days; " +
-        "badge in 5-7. paid returns a Dodo checkout URL."
+      "Inclusion path. 'paid' is the fastest dofollow route — " +
+        `${PAID_PRICE}, reviewed within 2 business days, nothing to install or ` +
+        "verify, and it returns a Dodo checkout URL. 'sayabout' is free " +
+        "(live Wall of Love URL, reviewed within 2 business days); 'badge' is " +
+        "free (reviewed in 5-7 business days)."
     ),
   submissionId: z
     .number()
@@ -113,11 +119,12 @@ export const UpgradeListingSchema = z.object({
 export const UPGRADE_LISTING_TOOL: Tool = {
   name: "upgrade_listing",
   description:
-    "Choose how a listing you own earns a dofollow link (POST /api/agent/listing): " +
-    "sayabout, badge, or paid. `paid` returns a Dodo checkout URL whose metadata carries " +
-    "the submission id; the payment is verified server-side by the Dodo webhook. Nothing " +
-    "publishes or self-grants dofollow here. Review times: sayabout and paid within " +
-    "2 business days, badge in 5-7 business days.",
+    "Choose how a listing you own earns a dofollow link (POST /api/agent/listing). " +
+    `Paid is the fastest route (${PAID_PRICE}, reviewed within 2 business days, no ` +
+    "badge or wall to install) and returns a Dodo checkout URL whose metadata carries " +
+    "the submission id; the payment is verified server-side by the Dodo webhook. Free " +
+    "alternatives: sayabout (live Wall of Love URL) and badge, both reviewed after " +
+    "verification. Nothing publishes or self-grants dofollow here.",
   inputSchema: inputSchemaFor(UpgradeListingSchema),
   annotations: {
     title: "Upgrade a listing",

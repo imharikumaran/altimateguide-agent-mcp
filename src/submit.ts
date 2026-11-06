@@ -62,10 +62,11 @@ export const SubmitToolSchema = z.object({
     .optional()
     .describe(
       "Inclusion path (default none — free no-verification listing, nofollow, " +
-        "reviewed within 30 calendar days). " +
-        "sayabout (Wall of Love URL, free, reviewed within 2 business days, dofollow) and " +
-        "badge (free, reviewed in 5-7 business days, dofollow) need verificationUrl. " +
-        "For a paid (dofollow, reviewed within 2 business days) listing use upgrade_listing."
+        "reviewed within 30 calendar days). For the fastest dofollow link use " +
+        "upgrade_listing with path 'paid' — paid is not accepted here because the " +
+        "payment is verified server-side. Free dofollow alternatives: sayabout (live " +
+        "Wall of Love URL, reviewed within 2 business days) and badge (reviewed in 5-7 " +
+        "business days); both need verificationUrl."
     ),
   verificationUrl: z.string().url().optional().describe("Required for sayabout/badge proof"),
   externalId: z
@@ -110,10 +111,13 @@ export const SUBMIT_TOOL: Tool = {
   description:
     "Submit a tool to the Altimateguide directory for editorial review " +
     "(POST /api/agent/submit). The listing is queued as pending and is never " +
-    "published automatically — an editor reviews it. Turnaround depends on proof: " +
-    "sayabout/paid within 2 business days (dofollow), badge in 5-7 business days " +
-    "(dofollow), none (free, no verification) within 30 calendar days (nofollow). " +
-    "Categories are optional; " +
+    "published automatically — an editor reviews it. The fastest dofollow route is " +
+    "the paid listing ($14.99 one-time, reviewed within 2 business days, nothing to " +
+    "install): submit here with proof 'none' (or omit proof), then call " +
+    "upgrade_listing with path 'paid' to get a checkout URL for the human. Free " +
+    "dofollow alternatives: sayabout (live Wall of Love URL) and badge, reviewed " +
+    "within 2 and 5-7 business days respectively. Unverified 'none' listings stay " +
+    "nofollow and are reviewed within 30 calendar days. Categories are optional; " +
     "unknown/empty categories are recorded for the reviewer. Requires a token " +
     "(run complete_login, or set ALTIMATEGUIDE_AGENT_TOKEN).",
   inputSchema: inputSchemaFor(SubmitToolSchema),

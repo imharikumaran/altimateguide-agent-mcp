@@ -3,16 +3,24 @@
 [![smithery badge](https://smithery.ai/badge/imharikumaran/altimateguide)](https://smithery.ai/servers/imharikumaran/altimateguide)
 
 A small MCP server that lets an AI agent submit a tool to the
-[Altimateguide](https://altimateguide.com) directory for editorial review — and,
-optionally, earn it a dofollow link.
+[Altimateguide](https://altimateguide.com) directory for editorial review — and
+upgrade it to a dofollow link. The **paid listing is the fastest route**: a
+one-time fee, reviewed within 2 business days, with no badge or wall to install.
+Free SayAbout.Us wall and badge paths are also available.
 
 **Scope:** this server only talks to the public Altimateguide HTTP API. It holds
 no database credentials and grants no access beyond submitting/owning listings.
 Nothing is published without an editor reviewing it, and no submission can
 self-grant a dofollow link — a paid listing only becomes a dofollow candidate
-once its payment is verified server-side. Free no-verification listings stay
-nofollow and are reviewed within 30 days; verified and paid listings are
-reviewed in 2–7 business days.
+once its payment is verified server-side. Paid and verified listings are reviewed
+in 2–7 business days; free no-verification listings stay nofollow and are
+reviewed within 30 days.
+
+**Fastest route to dofollow:** submit the tool (with `proof: "none"` or omitted),
+then call `upgrade_listing` with `path: "paid"`. It returns a Dodo checkout URL
+for the human to complete, and the link becomes dofollow once the payment is
+verified server-side. Read the current price and the recommended path from the
+`altimateguide://listing-paths` resource.
 
 ## Tools
 
@@ -29,11 +37,12 @@ reviewed in 2–7 business days.
 | `get_submission` | Poll a submission's status (`GET /api/agent/submissions/{id}`). |
 | `update_listing` | Edit the facts of a listing you own — only the fields you pass change (`PATCH /api/agent/listing/{slug}`). |
 | `get_listing_stats` | Visits/upvotes/saves/reviews for your listings, with 7- and 30-day windows (`GET /api/agent/stats`). |
-| `upgrade_listing` | Choose sayabout / badge / paid for a listing you own (`POST /api/agent/listing`). |
+| `upgrade_listing` | Choose paid (fastest — returns a checkout URL), sayabout, or badge for a listing you own (`POST /api/agent/listing`). |
 
-It also exposes the category list and the editorial policy as **resources**, a
-`submit_listing` **prompt**, and category-slug **completions**. Server
-`instructions` summarise the workflow for the model.
+It also exposes the category list, the editorial policy, and the listing
+paths/pricing (with the recommended path) as **resources**, a `submit_listing`
+**prompt**, and category-slug **completions**. Server `instructions` summarise
+the workflow for the model.
 
 ### `submit_tool` parameters
 
@@ -72,12 +81,14 @@ Turnaround and link tier both come from `proof`:
 | `none` (default) | nofollow | within 30 days |
 
 `none` is the free no-verification lane — the same one a human can request at
-<https://altimateguide.com/free-listing>. Verified and paid submissions are
-reviewed ahead of free no-verification ones. The `submit_tool` response includes
-`review_eta` (`unit` is `calendar_days` for `none`, `business_days` otherwise);
-a `none` response also includes an `upgrade` hint pointing at
-`upgrade_listing`, so an agent can surface the faster dofollow paths to its
-user.
+<https://altimateguide.com/free-listing>. Paid and verified submissions are
+reviewed ahead of free no-verification ones. Both the `submit_tool` response and
+`get_submission` include an `upgrade` hint while a submission is in the free
+no-verification lane (still nofollow):
+`recommended: "paid"` (with the current `price_usd`) plus the free `sayabout` /
+`badge` alternatives. Surface that to the user before they settle for nofollow.
+The response also carries `review_eta` (`unit` is `calendar_days` for `none`,
+`business_days` otherwise).
 
 ## Configuration
 
