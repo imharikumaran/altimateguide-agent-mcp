@@ -44,6 +44,7 @@ import {
 } from "./auth.js";
 import { LIST_CATEGORIES_TOOL, fetchCategories } from "./categories.js";
 import { SUBMIT_TOOL, SubmitToolSchema, submitTool } from "./submit.js";
+import { SUBMIT_DEAL_TOOL, SubmitDealSchema, submitDeal } from "./deal.js";
 import { UPDATE_LISTING_TOOL, UpdateListingSchema, updateListing } from "./update.js";
 import { GET_LISTING_STATS_TOOL, GetListingStatsSchema, getListingStats } from "./stats.js";
 import {
@@ -69,6 +70,7 @@ const INSTRUCTIONS = [
   "Paid/dofollow (recommended): the fastest route to a dofollow link is the paid listing. Call upgrade_listing with path 'paid' on a listing you own — it returns a Dodo checkout URL for the human to complete, and the link becomes dofollow once the payment is verified server-side. Read the current price, review times and the recommended path from the altimateguide://listing-paths resource.",
   "Free alternatives: upgrade_listing(path: 'sayabout') needs a live SayAbout.Us Wall of Love URL; path 'badge' needs the Altimateguide badge live on the site. Both are free and become dofollow after verification. Free no-verification submissions (proof 'none') stay nofollow.",
   "Review times: paid and sayabout within 2 business days, badge in 5-7 business days, and proof 'none' within 30 calendar days (nofollow). Paid and verified submissions are reviewed first. The submit_tool response carries review_eta, and in the free no-verification lane (still nofollow) the submit_tool response and get_submission include an upgrade hint naming 'paid' as recommended — surface it to the user before they settle for nofollow.",
+  "Deals: submit_deal queues a time-boxed offer (lifetime deal, sale, or launch price) for a product and puts it on /deals once approved. Pass the page documenting the offer as dealUrl; endsAt is optional — omit it for an open-ended offer. Deals are reviewed free within 7 calendar days, or within 2 business days with a paid listing's paymentRef. A deal never changes the listing's link tier.",
   "After submitting, poll get_submission(id).",
   "If a submission comes back rejected, call submit_tool with resubmit: true to send a revised listing for a fresh review — a plain retry replays the rejected one.",
   "Manage what you own: update_listing(slug, …) edits a listing you own (only the fields you pass change); get_listing_stats(slug?) returns its visits/upvotes/saves/reviews.",
@@ -84,6 +86,7 @@ const TOOLS: Tool[] = [
   LIST_CATEGORIES_TOOL,
   CHECK_DUPLICATE_TOOL,
   SUBMIT_TOOL,
+  SUBMIT_DEAL_TOOL,
   GET_SUBMISSION_TOOL,
   UPDATE_LISTING_TOOL,
   UPGRADE_LISTING_TOOL,
@@ -113,6 +116,8 @@ async function callTool(name: string, args: unknown) {
       return checkDuplicate(CheckDuplicateSchema.parse(args));
     case "submit_tool":
       return submitTool(SubmitToolSchema.parse(args));
+    case "submit_deal":
+      return submitDeal(SubmitDealSchema.parse(args));
     case "get_submission":
       return getSubmission(GetSubmissionSchema.parse(args));
     case "upgrade_listing":

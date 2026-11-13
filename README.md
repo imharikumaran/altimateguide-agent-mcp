@@ -4,9 +4,10 @@
 
 A small MCP server that lets an AI agent submit a tool to the
 [Altimateguide](https://altimateguide.com) directory for editorial review — and
-upgrade it to a dofollow link. The **paid listing is the fastest route**: a
-one-time fee, reviewed within 2 business days, with no badge or wall to install.
-Free SayAbout.Us wall and badge paths are also available.
+upgrade it to a dofollow link, or add a time-boxed deal for it. The **paid
+listing is the fastest route**: a one-time fee, reviewed within 2 business days,
+with no badge or wall to install. Free SayAbout.Us wall and badge paths are also
+available.
 
 **Scope:** this server only talks to the public Altimateguide HTTP API. It holds
 no database credentials and grants no access beyond submitting/owning listings.
@@ -34,6 +35,7 @@ verified server-side. Read the current price and the recommended path from the
 | `list_categories` | The valid category slugs (`GET /api/agent/categories`). |
 | `check_duplicate` | Preflight a name/URL against published tools + the pending queue (`GET /api/agent/check`). |
 | `submit_tool` | Submit a listing for editorial review (`POST /api/agent/submit`). |
+| `submit_deal` | Submit a time-boxed deal — lifetime deal, sale, or launch offer (`POST /api/agent/deals`). |
 | `get_submission` | Poll a submission's status (`GET /api/agent/submissions/{id}`). |
 | `update_listing` | Edit the facts of a listing you own — only the fields you pass change (`PATCH /api/agent/listing/{slug}`). |
 | `get_listing_stats` | Visits/upvotes/saves/reviews for your listings, with 7- and 30-day windows (`GET /api/agent/stats`). |
@@ -66,6 +68,33 @@ submission — it is recorded for the reviewer, exactly like the site's feed
 pipeline. **Paid** (dofollow) listings are not submitted here; use
 `upgrade_listing` with `path: "paid"`, which returns a Dodo checkout URL whose
 payment is verified server-side.
+
+### `submit_deal` parameters
+
+A deal is a **time-boxed offer attached to a listing** — a lifetime deal, a sale,
+or a launch price. It is separate from the listing itself: it never changes the
+link tier, and it only appears on <https://altimateguide.com/deals> once
+approved.
+
+- `name` (string, required) — product name
+- `url` (string, required) — canonical product URL (matched to a listing by domain)
+- `dealUrl` (string, required) — the page documenting the offer; review verifies the price and dates against it
+- `price` (number, required) — current offer price in USD
+- `kind` (string, required) — `ltd` | `sale` | `launch`
+- `billing` (string, optional) — `one-time` (default) | `month` | `year`
+- `wasPrice` (number, optional) — pre-deal price, shown struck through
+- `endsAt` (string, optional) — `YYYY-MM-DD`; **omit it for an open-ended offer**
+- `tiers` (array, optional) — `{ name, codes? }` items
+- `description` (string, optional) — "what's included", shown on the deals hub
+- `categories` (array, optional) — slugs for an unlisted product
+- `paymentRef` (string, optional) — a paid listing's payment ref → priority lane
+- `externalId` (string, optional) — idempotency key (derived from the URLs when omitted)
+- `source` (string, optional) — origin id (default `agent:mcp`)
+
+Deal review: **free within 7 calendar days**, **priority within 2 business days**
+with `paymentRef`. The response carries `review_eta`, `needs_listing` (true when
+the product is not listed yet) and `link_tier: "unchanged"`. Open-ended offers
+(no `endsAt`) stay live while their last verification is under 30 days old.
 
 Full request/response contract: <https://altimateguide.com/openapi.json>.
 
@@ -160,6 +189,7 @@ mcp.so, mcp.directory).
 │   ├── auth.ts         # start_login / complete_login / whoami
 │   ├── categories.ts   # list_categories + matching
 │   ├── submit.ts       # submit_tool
+│   ├── deal.ts         # submit_deal
 │   ├── listing.ts      # check_duplicate / get_submission / upgrade_listing
 │   ├── credentials.ts  # token storage (~/.config/altimateguide)
 │   ├── schema.ts       # zod -> JSON Schema helper
