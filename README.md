@@ -2,12 +2,20 @@
 
 [![smithery badge](https://smithery.ai/badge/imharikumaran/altimateguide)](https://smithery.ai/servers/imharikumaran/altimateguide)
 
-A small MCP server that lets an AI agent submit a tool to the
-[Altimateguide](https://altimateguide.com) directory for editorial review — and
-upgrade it to a dofollow link, or add a time-boxed deal for it. The **paid
-listing is the fastest route**: a one-time fee, reviewed within 2 business days,
-with no badge or wall to install. Free SayAbout.Us wall and badge paths are also
-available.
+The MCP server for [Altimateguide](https://altimateguide.com), an independent
+software directory. It has two halves:
+
+- **Research — no account.** Search tool profiles, compare two tools, find
+  alternatives, and list live deals. Every result carries its canonical
+  altimateguide.com URL.
+- **Submission — with an account token.** Submit a tool to the directory for
+  editorial review, add a time-boxed deal, and upgrade the listing. The **paid
+  listing is the fastest route**: a one-time fee, reviewed within 2 business
+  days, with no badge or wall to install.
+
+The same server is available two ways: hosted over streamable HTTP at
+`https://altimateguide.com/api/mcp`, or locally over stdio via `npx`. One tool
+surface, one code path (`src/server.ts`).
 
 **Scope:** this server only talks to the public Altimateguide HTTP API. It holds
 no database credentials and grants no access beyond submitting/owning listings.
@@ -24,6 +32,18 @@ verified server-side. Read the current price and the recommended path from the
 `altimateguide://listing-paths` resource.
 
 ## Tools
+
+### Research (no account needed)
+
+| Tool | What it does |
+| --- | --- |
+| `search_tools` | Search published tools by keyword, category or free plan (`GET /api/public/search`). |
+| `get_tool` | Read one profile: pricing, free plan/trial, pros, cons, features, rating (`GET /api/public/tools/{slug}`). |
+| `compare_tools` | Compare two tools, with the canonical `/vs/` page when one exists (`GET /api/public/compare`). |
+| `find_alternatives` | Curated alternatives page first, then same-category tools (`GET /api/public/alternatives/{slug}`). |
+| `list_deals` | Live lifetime deals, sales and launch offers (`GET /api/public/deals`). |
+
+### Submission (account token)
 
 | Tool | What it does |
 | --- | --- |
@@ -135,6 +155,44 @@ The response also carries `review_eta` (`unit` is `calendar_days` for `none`,
 npx -y altimateguide-agent-mcp        # run directly (stdio)
 ```
 
+### Remote (streamable HTTP)
+
+The hosted endpoint needs no install and no token for the research tools:
+
+```
+https://altimateguide.com/api/mcp
+```
+
+```json
+{
+  "mcpServers": {
+    "altimateguide": {
+      "type": "http",
+      "url": "https://altimateguide.com/api/mcp"
+    }
+  }
+}
+```
+
+Per-client setup (Claude Code, Codex, Gemini CLI, VS Code, Cursor, Claude,
+ChatGPT): <https://altimateguide.com/mcp/install>.
+
+The hosted endpoint exposes the **research tools only** (`search_tools`, `get_tool`,
+`compare_tools`, `find_alternatives`, `list_deals`, `list_categories`). Submission
+tools read a token from the server process — on a shared host that would mean acting
+as the deployment's account — so they stay on the local stdio server until OAuth
+gives each caller its own credential. `createServer({ hosted: true })` enforces this.
+
+The transport is **stateless** — no session id, JSON responses instead of SSE — so
+it runs behind serverless functions without sticky routing.
+
+To run the HTTP transport yourself:
+
+```bash
+npm run dev:http     # tsx, :3000
+npm run build && npm run serve
+```
+
 Or from a local checkout:
 
 ```bash
@@ -184,13 +242,18 @@ mcp.so, mcp.directory).
 ```
 .
 ├── src/
-│   ├── index.ts        # stdio server: tool registry + resources/prompts/completions
+│   ├── server.ts       # createServer(): tools, resources, prompts, completions (one surface)
+│   ├── index.ts        # stdio entry (the npx bin)
+│   ├── http.ts         # streamable HTTP entries: web-standard + node
+│   ├── read.ts         # public read tools (no auth)
 │   ├── api.ts          # shared fetch client (timeout, retry, error mapping)
 │   ├── auth.ts         # start_login / complete_login / whoami
 │   ├── categories.ts   # list_categories + matching
 │   ├── submit.ts       # submit_tool
 │   ├── deal.ts         # submit_deal
 │   ├── listing.ts      # check_duplicate / get_submission / upgrade_listing
+│   ├── update.ts       # update_listing
+│   ├── stats.ts        # get_listing_stats
 │   ├── credentials.ts  # token storage (~/.config/altimateguide)
 │   ├── schema.ts       # zod -> JSON Schema helper
 │   └── version.ts      # package version
@@ -209,8 +272,8 @@ the entire surface (the same surface a supply-chain scanner reports):
 
 - **Network** — outbound HTTPS only, to the base in `ALTIMATEGUIDE_API_URL`
   (default `https://altimateguide.com`). The endpoints it calls are exactly the
-  ones in [Tools](#tools) (`/api/auth/…`, `/api/agent/…`, `/openapi.json`). No
-  telemetry and no third-party calls.
+  ones in [Tools](#tools) (`/api/public/…`, `/api/auth/…`, `/api/agent/…`,
+  `/openapi.json`). No telemetry and no third-party calls.
 - **Environment variables** — reads `ALTIMATEGUIDE_AGENT_TOKEN`,
   `ALTIMATEGUIDE_API_URL`, and `ALTIMATEGUIDE_CONFIG_DIR`. Nothing is written
   back.
