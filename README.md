@@ -1,6 +1,6 @@
 # Altimateguide Agent MCP Server
 
-[![smithery badge](https://smithery.ai/badge/imharikumaran/altimateguide)](https://smithery.ai/servers/imharikumaran/altimateguide)
+[![LightNow capabilities](https://lightnow.ai/badge/io.github.imharikumaran/altimateguide)](https://lightnow.ai/servers/io.github.imharikumaran/altimateguide)
 
 The MCP server for [Altimateguide](https://altimateguide.com), an independent
 software directory. It has two halves:
